@@ -1,24 +1,37 @@
+var Snake = require('./snake.js').Snake;
 var Board = require('./board.js').Board;
+var BoardDisplay = require('./board.js').BoardDisplay;
 
-var GAME_INTERVAL = 100;
+var GAME_INTERVAL = 750;
 
 module.exports = {
-	getBoard: function() {
-		return new Board(25, 25);
-	},
-	
 	main: function() {
-		var greeting = "It works from content.js with auto.";
+		var snake = new Snake(12, 12);
+		var board = new Board(25, 25, snake);
+		var boardDisplay = new BoardDisplay(board);
 
-		// this.getBoard().initialize();
+		var interval = setInterval(function() {
+			if (!board.step()) {
+				clearInterval(interval);
+			}
+			boardDisplay.draw();
+		}, GAME_INTERVAL);
 
-		setInterval(this.frame, GAME_INTERVAL);
+		window.onkeydown = function(e) {
+			var key = e.keyCode ? e.keyCode : e.which;
 
-		return greeting;
-	},
+			var directionMap = {
+				37 : board.snake.DIRECTIONS.LEFT,
+				38 : board.snake.DIRECTIONS.UP,
+				39 : board.snake.DIRECTIONS.RIGHT,
+				40 : board.snake.DIRECTIONS.DOWN
+			};
 
-	frame: function() {
-		this.getBoard.draw();
-		console.log("ASDFASDFASDF");
+			if (directionMap[key] != null) { // up?
+				board.snake.setDirection(directionMap[key]);
+			}
+		};
+
+		return "ASDF";
 	}
 }

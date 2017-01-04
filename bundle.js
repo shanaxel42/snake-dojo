@@ -45,7 +45,8 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	__webpack_require__(1);
-	document.write(__webpack_require__(5));
+	var content = __webpack_require__(5);
+	content.main();
 
 
 /***/ },
@@ -398,9 +399,111 @@
 
 /***/ },
 /* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Board = __webpack_require__(6).Board;
+
+	var GAME_INTERVAL = 100;
+
+	module.exports = {
+		getBoard: function() {
+			return new Board(25, 25);
+		},
+		
+		main: function() {
+			var greeting = "It works from content.js with auto.";
+
+			// this.getBoard().initialize();
+
+			setInterval(this.frame, GAME_INTERVAL);
+
+			return greeting;
+		},
+
+		frame: function() {
+			this.getBoard.draw();
+
+		}
+	}
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Snake = __webpack_require__(7).Snake;
+
+	module.exports = {
+		Board: Board,
+		BoardDisplay: BoardDisplay
+	}
+
+	/**
+	 * Created by saxelrod on 12/5/16.
+	 */
+	function Board(width, height) {
+		this.width = width;
+		this.height = height;
+		this.snake = new Snake(width / 2, height / 2);
+	}
+
+	function BoardDisplay(board) {
+		this.el = document.getElementById("gameBoard");
+		this.board = board;
+		this.snakeDisplay = new SnakeDisplay(board);
+
+		// draw: function() {
+		// 	asdfasdf
+		// 	left off here
+		//
+		// }
+	}
+
+	BoardDisplay.prototype = {
+		constructor: BoardDisplay,
+		
+		init: function() {
+			for (var i=0; i < this.width; i++) {
+				t += '<tr id="row_' + i + '">';
+
+				for (var j = 0; j < this.height; j++) {
+					t+= '<td id="col_' + j + '">O</td>';
+				}
+
+				t += '</tr>\n';
+			}
+			
+			this.el.innerHTML = ("<table>" + t + "</table>");
+		},
+		
+		draw: function() {
+			this.init();
+			this.snakeDisplay.draw();
+		}
+	}
+
+/***/ },
+/* 7 */
 /***/ function(module, exports) {
 
-	module.exports = "It works from content.js.";
+	module.exports = {
+		Snake: Snake
+	}
+
+
+	function SnakeSegment(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+
+	SnakeSegment.prototype = {
+		constructor: SnakeSegment,
+	};
+
+	function Snake(x, y) {
+		this.segments = [ new SnakeSegment(x, y) ];
+
+	}
 
 
 /***/ }
