@@ -1,4 +1,6 @@
 var Snake = require('./snake.js').Snake;
+var Food = require('./food.js').Food;
+var EventCenter = require('./event.js').EventCenter;
 
 module.exports = {
 	Board: Board,
@@ -8,23 +10,50 @@ module.exports = {
 /**
  * Created by saxelrod on 12/5/16.
  */
-function Board(width, height, snake) {
+function Board(eventCenter, width, height, snake) {
+	this.eventListeners = {};
 	this.width = width;
 	this.height = height;
 	this.snake = snake;
+	this.food = new Food(eventCenter, 3, 4);
+	this.eventCenter = eventCenter;
 
-	this.step = function() {
+	this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, function(obj) {
+			this.moveFood();
+	}.bind(this));
+
+	this.moveFood = function() {
+		this.food.move(parseInt(Math.random() * this.height, 10), parseInt(Math.random() * this.width, 10));
+
+		for(var i = 0; i < this.snake.segments.length; i++) {
+			if(this.food.segmentIsHere(this.snake.segments[i])) {
+				this.moveFood();
+			}
+		}
+	},
+
+	this.step = function () {
 		snake.move();
 		return !this.isSnakeDead();
 	},
 
-	this.isSnakeDead = function() {
-		var segment = snake.segments[0];
+	this.hasFoodAt = function (row, col) {
+		return this.food.isHere(row, col);
+	},
+
+	this.isSnakeDead = function () {
+		var segment = this.snake.segments[0];
 		return segment.row >= this.height
-						|| segment.col >= this.width
-						|| segment.row < 0
-						|| segment.col < 0
-				|| snake.intersectWithSelf();
+				|| segment.col >= this.width
+				|| segment.row < 0
+				|| segment.col < 0
+				|| this.snake.intersectWithSelf();
+	},
+
+	this.ateFood = function () {
+		if (this.food.segmentIsHere(this.snake.segments[0])) {
+			this.eventCenter.fireEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, this);
+		}
 	}
 }
 
@@ -36,29 +65,31 @@ function BoardDisplay(board) {
 BoardDisplay.prototype = {
 	constructor: BoardDisplay,
 
-	drawEmptyCell: function(row, col) {
-		return '<td id="col_' + col + '">O</td>';
+	drawCell: function (row, col) {
+		var cls = "";
+
+		if (this.board.snake.hasSegmentAt(row, col)) {
+			cls = "snake";
+		} else if (this.board.hasFoodAt(row, col)) {
+			cls += "food";
+		}
+
+		return '<td id="col_' + col + '" class="' + cls + '">O</td>';
 	},
 
-	drawSnakeCell: function(row, col) {
-		return '<td id="col_' + col + '" class="snake">=</td>';
-	},
-
-	draw: function() {
-
-		if (this.board.isSnakeDead()) {
+	draw: function () {
+		if (this.board.ateFood()) {
+			// do something
+		} else if (this.board.isSnakeDead()) {
 			document.getElementsByTagName("pre")[0].style = "display: block"
 		} else {
 			var t = "";
 
 			for (var i = 0; i < this.board.width; i++) {
+				var empty = true;
 				t += '<tr id="row_' + i + '">';
 				for (var j = 0; j < this.board.height; j++) {
-					if (this.board.snake.hasSegmentAt(i, j)) {
-						t += this.drawSnakeCell(i, j);
-					} else {
-						t += this.drawEmptyCell(i, j);
-					}
+					t += this.drawCell(i, j);
 				}
 
 				t += '</tr>\n';

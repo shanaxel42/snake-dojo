@@ -12,7 +12,7 @@ SnakeSegment.prototype = {
 	constructor: SnakeSegment,
 };
 
-function Snake(x, y) {
+function Snake(eventCenter, x, y) {
 	this.DIRECTIONS = {
 		UP: 'UP',
 		DOWN: 'DOWN',
@@ -21,6 +21,13 @@ function Snake(x, y) {
 	};
 
 	this.direction = this.DIRECTIONS.UP;
+	this.eventCenter = eventCenter;
+	this.eatingFood = false;
+
+	this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, function(obj){
+		this.eatingFood = true;
+		console.log("snake event", obj)
+	}.bind(this));
 
 	this.segments = [ new SnakeSegment(x, y),
 					  new SnakeSegment(x -1, y),
@@ -43,16 +50,15 @@ function Snake(x, y) {
 		console.log(direction);
 		var oppositeDir = false;
 
-		this.DIRECTIONS.keys().filter(function(d) {
-			DO STUFF HERE
-			return d === direction;
-		});
-
-		if(this.direction == this.DIRECTIONS.UP && direction == this.DIRECTIONS.DOWN) {
+		if((this.direction == this.DIRECTIONS.UP && direction == this.DIRECTIONS.DOWN) ||
+			(this.direction == this.DIRECTIONS.DOWN && direction == this.DIRECTIONS.UP) ||
+			(this.direction == this.DIRECTIONS.LEFT && direction == this.DIRECTIONS.RIGHT) ||
+			(this.direction == this.DIRECTIONS.RIGHT && direction == this.DIRECTIONS.LEFT)
+		) {
 			oppositeDir = true;
 		}
 
-		if(!oppositeDir) {
+		if (!oppositeDir) {
 			this.direction = direction;
 		}
 	},
@@ -81,10 +87,16 @@ function Snake(x, y) {
 				break;
 		}
 
-		this.segments.unshift(new SnakeSegment(newSegCol, newSegRow));
-		// chop off last segment
-		this.segments.pop();
-	}
+		if(!this.eatingFood) {
+			// chop off last segment
+			this.segments.pop();
+		}
+
+		var newSeg = new SnakeSegment(newSegCol, newSegRow);
+		/* if newSeg is food, grow snake and put new food on board */
+		this.segments.unshift(newSeg);
+		this.eatingFood = false;
+	},
 
 	this.intersectWithSelf = function() {
 		var headSegment = this.segments[0];
@@ -93,4 +105,5 @@ function Snake(x, y) {
 			return headSegment.row === segment.row && headSegment.col === segment.col;
 		}).length > 0;
 	}
+
 }

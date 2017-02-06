@@ -1,13 +1,16 @@
 var Snake = require('./snake.js').Snake;
 var Board = require('./board.js').Board;
 var BoardDisplay = require('./board.js').BoardDisplay;
+var EventCenter = require('./event.js').EventCenter;
 
-var GAME_INTERVAL = 750;
+var GAME_INTERVAL = 250;
+make the game interval faster each time the snake eats food
 
 module.exports = {
 	main: function() {
-		var snake = new Snake(12, 12);
-		var board = new Board(25, 25, snake);
+		var eventCenter = new EventCenter();
+		var snake = new Snake(eventCenter, 12, 12);
+		var board = new Board(eventCenter, 25, 25, snake);
 		var boardDisplay = new BoardDisplay(board);
 
 		var interval = setInterval(function() {

@@ -84,7 +84,7 @@
 
 
 	// module
-	exports.push([module.id, "body {\n        background: yellow;\n    }\n", ""]);
+	exports.push([module.id, "body {\n        background: yellow;\n    }\n.snake {\n    background-color: green;\n}", ""]);
 
 	// exports
 
@@ -401,37 +401,152 @@
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Board = __webpack_require__(6).Board;
+	var Snake = __webpack_require__(6).Snake;
+	var Board = __webpack_require__(7).Board;
+	var BoardDisplay = __webpack_require__(7).BoardDisplay;
 
-	var GAME_INTERVAL = 100;
+	var GAME_INTERVAL = 750;
 
 	module.exports = {
-		getBoard: function() {
-			return new Board(25, 25);
-		},
-		
 		main: function() {
-			var greeting = "It works from content.js with auto.";
+			var snake = new Snake(12, 12);
+			var board = new Board(25, 25, snake);
+			var boardDisplay = new BoardDisplay(board);
 
-			// this.getBoard().initialize();
+			var interval = setInterval(function() {
+				if (!board.step()) {
+					clearInterval(interval);
+				}
+				boardDisplay.draw();
+			}, GAME_INTERVAL);
 
-			setInterval(this.frame, GAME_INTERVAL);
+			window.onkeydown = function(e) {
+				var key = e.keyCode ? e.keyCode : e.which;
 
-			return greeting;
-		},
+				var directionMap = {
+					37 : board.snake.DIRECTIONS.LEFT,
+					38 : board.snake.DIRECTIONS.UP,
+					39 : board.snake.DIRECTIONS.RIGHT,
+					40 : board.snake.DIRECTIONS.DOWN
+				};
 
-		frame: function() {
-			this.getBoard.draw();
+				if (directionMap[key] != null) { // up?
+					board.snake.setDirection(directionMap[key]);
+				}
+			};
 
+			return "ASDF";
 		}
 	}
 
 
 /***/ },
 /* 6 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		Snake: Snake
+	}
+
+
+	function SnakeSegment(x, y) {
+		this.row = y;
+		this.col = x;
+	}
+
+	SnakeSegment.prototype = {
+		constructor: SnakeSegment,
+	};
+
+	function Snake(x, y) {
+		this.DIRECTIONS = {
+			UP: 'UP',
+			DOWN: 'DOWN',
+			LEFT: 'LEFT',
+			RIGHT: 'RIGHT'
+		};
+
+		this.direction = this.DIRECTIONS.UP;
+
+		this.segments = [ new SnakeSegment(x, y),
+						  new SnakeSegment(x -1, y),
+						  new SnakeSegment(x -2, y),
+						  new SnakeSegment(x -3, y),
+						  new SnakeSegment(x -4, y),
+						  new SnakeSegment(x -5, y),
+						  new SnakeSegment(x -6, y)];
+
+		this.hasSegmentAt = function(row, col) {
+			for (var i=0; i < this.segments.length; i++) {
+				if (this.segments[i].col === col && this.segments[i].row === row) {
+					return true;
+				}
+			}
+			return false;
+		},
+
+		this.setDirection = function(direction) {
+			console.log(direction);
+			var oppositeDir = false;
+
+			this.DIRECTIONS.keys().filter(function(d) {
+				// DO STUFF HERE
+				return d === direction;
+			});
+
+			if(this.direction == this.DIRECTIONS.UP && direction == this.DIRECTIONS.DOWN) {
+				oppositeDir = true;
+			}
+
+			if(!oppositeDir) {
+				this.direction = direction;
+			}
+		},
+
+		this.move = function() {
+			var currentHeadSegment = this.segments[0]; //duplicate this?
+
+			var newSegCol;
+			var newSegRow;
+			switch (this.direction) {
+				case this.DIRECTIONS.UP:
+					newSegCol = currentHeadSegment['col'];
+					newSegRow = currentHeadSegment['row'] - 1;
+					break;
+				case this.DIRECTIONS.LEFT:
+					newSegCol = currentHeadSegment['col'] - 1;
+					newSegRow = currentHeadSegment['row'];
+					break;
+				case this.DIRECTIONS.RIGHT:
+					newSegCol = currentHeadSegment['col'] + 1;
+					newSegRow = currentHeadSegment['row'];
+					break;
+				case this.DIRECTIONS.DOWN:
+					newSegCol = currentHeadSegment['col'];
+					newSegRow = currentHeadSegment['row'] + 1;
+					break;
+			}
+
+			this.segments.unshift(new SnakeSegment(newSegCol, newSegRow));
+			// chop off last segment
+			this.segments.pop();
+		}
+
+		this.intersectWithSelf = function() {
+			var headSegment = this.segments[0];
+
+			return this.segments.slice(1, this.segments.length).filter(function(segment) {
+				return headSegment.row === segment.row && headSegment.col === segment.col;
+			}).length > 0;
+		}
+	}
+
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Snake = __webpack_require__(7).Snake;
+	var Snake = __webpack_require__(6).Snake;
 
 	module.exports = {
 		Board: Board,
@@ -441,70 +556,66 @@
 	/**
 	 * Created by saxelrod on 12/5/16.
 	 */
-	function Board(width, height) {
+	function Board(width, height, snake) {
 		this.width = width;
 		this.height = height;
-		this.snake = new Snake(width / 2, height / 2);
+		this.snake = snake;
+
+		this.step = function() {
+			snake.move();
+			return !this.isSnakeDead();
+		},
+
+		this.isSnakeDead = function() {
+			var segment = snake.segments[0];
+			return segment.row >= this.height
+							|| segment.col >= this.width
+							|| segment.row < 0
+							|| segment.col < 0
+					|| snake.intersectWithSelf();
+		}
 	}
 
 	function BoardDisplay(board) {
 		this.el = document.getElementById("gameBoard");
 		this.board = board;
-		this.snakeDisplay = new SnakeDisplay(board);
-
-		// draw: function() {
-		// 	asdfasdf
-		// 	left off here
-		//
-		// }
 	}
 
 	BoardDisplay.prototype = {
 		constructor: BoardDisplay,
-		
-		init: function() {
-			for (var i=0; i < this.width; i++) {
-				t += '<tr id="row_' + i + '">';
 
-				for (var j = 0; j < this.height; j++) {
-					t+= '<td id="col_' + j + '">O</td>';
+		drawEmptyCell: function(row, col) {
+			return '<td id="col_' + col + '">O</td>';
+		},
+
+		drawSnakeCell: function(row, col) {
+			return '<td id="col_' + col + '" class="snake">=</td>';
+		},
+
+		draw: function() {
+
+			if (this.board.isSnakeDead()) {
+				document.getElementsByTagName("pre")[0].style = "display: block"
+			} else {
+				var t = "";
+
+				for (var i = 0; i < this.board.width; i++) {
+					t += '<tr id="row_' + i + '">';
+					for (var j = 0; j < this.board.height; j++) {
+						if (this.board.snake.hasSegmentAt(i, j)) {
+							t += this.drawSnakeCell(i, j);
+						} else {
+							t += this.drawEmptyCell(i, j);
+						}
+					}
+
+					t += '</tr>\n';
 				}
 
-				t += '</tr>\n';
+				this.el.innerHTML = ("<table>" + t + "</table>");
 			}
-			
-			this.el.innerHTML = ("<table>" + t + "</table>");
-		},
-		
-		draw: function() {
-			this.init();
-			this.snakeDisplay.draw();
 		}
-	}
-
-/***/ },
-/* 7 */
-/***/ function(module, exports) {
-
-	module.exports = {
-		Snake: Snake
-	}
-
-
-	function SnakeSegment(x, y) {
-		this.x = x;
-		this.y = y;
-	}
-
-	SnakeSegment.prototype = {
-		constructor: SnakeSegment,
 	};
-
-	function Snake(x, y) {
-		this.segments = [ new SnakeSegment(x, y) ];
-
-	}
-
 
 /***/ }
 /******/ ]);
