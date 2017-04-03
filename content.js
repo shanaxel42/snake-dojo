@@ -4,7 +4,7 @@ var BoardDisplay = require('./board.js').BoardDisplay;
 var EventCenter = require('./event.js').EventCenter;
 
 var GAME_INTERVAL = 250;
-make the game interval faster each time the snake eats food
+// make the game interval faster each time the snake eats food
 
 module.exports = {
 	main: function() {
@@ -13,13 +13,22 @@ module.exports = {
 		var board = new Board(eventCenter, 25, 25, snake);
 		var boardDisplay = new BoardDisplay(board);
 
-		var interval = setInterval(function() {
-			if (!board.step()) {
-				clearInterval(interval);
-			}
-			boardDisplay.draw();
-		}, GAME_INTERVAL);
+		function startInterval(intervalTime) {
+			return setInterval(function() {
+				if (!board.step()) {
+					clearInterval(interval);
+				}
+				boardDisplay.draw();
+			}, intervalTime);
+		}
 
+		var interval = startInterval(GAME_INTERVAL);
+
+		eventCenter.listenToEvent(eventCenter.EVENT_SPEED_UP_GAME, function(obj){
+			GAME_INTERVAL -= GAME_INTERVAL > 50 ? 50: 0;
+			clearInterval(interval);
+			interval = startInterval(GAME_INTERVAL);
+		}.bind(this));
 		window.onkeydown = function(e) {
 			var key = e.keyCode ? e.keyCode : e.which;
 

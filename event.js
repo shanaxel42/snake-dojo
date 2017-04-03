@@ -4,6 +4,7 @@
 
 function EventCenter() {
 	this.EVENT_NAME_FOOD_ATE = "foodAte";
+	this.EVENT_SPEED_UP_GAME = "speedUpGame";
 
 	this.eventListeners = { };
 

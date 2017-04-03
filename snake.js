@@ -26,6 +26,9 @@ function Snake(eventCenter, x, y) {
 
 	this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, function(obj){
 		this.eatingFood = true;
+		//Speed up Game
+		this.eventCenter.fireEvent(this.eventCenter.EVENT_SPEED_UP_GAME, this);
+
 		console.log("snake event", obj)
 	}.bind(this));
 
