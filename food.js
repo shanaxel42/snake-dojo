@@ -1,12 +1,16 @@
+
 module.exports = {
-	Food: Food
+	Food: Food,
+	FoodTypes: Food.types
 }
 
 
-function Food(eventCenter, y, x) {
+function Food(eventCenter, type, y, x) {
+	this.type = type;
 	this.row = y;
 	this.col = x;
 	this.eventCenter = eventCenter;
+
 
 	this.move = function(row, col) {
 		this.row = row;
@@ -21,3 +25,9 @@ function Food(eventCenter, y, x) {
 		return this.isHere(snakeSegment.row, snakeSegment.col);
 	}
 }
+
+
+Food.types = {
+	FOOD: "food",
+	SPIDER: "spider"
+};
