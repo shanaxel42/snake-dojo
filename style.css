@@ -2,8 +2,11 @@ body {
         background: yellow;
     }
 .snake {
-    background-color: green;
+    background-color: blue;
 }
 .food {
+	background-color: green;
+}
+.spider {
 	background-color: red;
 }

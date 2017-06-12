@@ -6,6 +6,8 @@ module.exports = {
 
 
 function Food(eventCenter, type, y, x) {
+	this.points = Food.points[type];
+	console.log("ASDFASDFASDF", type, this.points);
 	this.type = type;
 	this.row = y;
 	this.col = x;
@@ -23,6 +25,10 @@ function Food(eventCenter, type, y, x) {
 
 	this.segmentIsHere = function(snakeSegment) {
 		return this.isHere(snakeSegment.row, snakeSegment.col);
+	},
+
+	this.equals = function(otherFood) {
+		return this.row === otherFood.row && this.col === otherFood.col && this.type === otherFood.type;
 	}
 }
 
@@ -30,4 +36,10 @@ function Food(eventCenter, type, y, x) {
 Food.types = {
 	FOOD: "food",
 	SPIDER: "spider"
+};
+
+// TODO make this better
+Food.points = {
+	food: 1,
+	spider: 200
 };

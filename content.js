@@ -34,6 +34,7 @@ module.exports = {
 			clearInterval(interval);
 			interval = startInterval(GAME_INTERVAL);
 		}.bind(this));
+
 		window.onkeydown = function(e) {
 			var key = e.keyCode ? e.keyCode : e.which;
 			console.log(key);

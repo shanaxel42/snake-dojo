@@ -416,15 +416,30 @@
 			var board = new Board(eventCenter, 25, 25, snake);
 			var boardDisplay = new BoardDisplay(board);
 
-			var interval = setInterval(function() {
-				if (!board.step()) {
-					clearInterval(interval);
-				}
-				boardDisplay.draw();
-			}, GAME_INTERVAL);
+			var interval;
 
+			document.getElementById("start").addEventListener("click", function(evt) {
+				this.blur();
+				togglePause(this);
+			});
+
+			function startInterval(intervalTime) {
+				return setInterval(function() {
+					if (!board.step()) {
+						clearInterval(interval);
+					}
+					boardDisplay.draw();
+				}, intervalTime);
+			}
+
+			eventCenter.listenToEvent(eventCenter.EVENT_SPEED_UP_GAME, function(obj){
+				GAME_INTERVAL -= GAME_INTERVAL > 50 ? 50: 0;
+				clearInterval(interval);
+				interval = startInterval(GAME_INTERVAL);
+			}.bind(this));
 			window.onkeydown = function(e) {
 				var key = e.keyCode ? e.keyCode : e.which;
+				console.log(key);
 
 				var directionMap = {
 					37 : board.snake.DIRECTIONS.LEFT,
@@ -436,7 +451,22 @@
 				if (directionMap[key] != null) { // up?
 					board.snake.setDirection(directionMap[key]);
 				}
+
+				if(key == 32) {
+					togglePause(document.getElementById("start"));
+				}
 			};
+
+			function togglePause(ctx) {
+				if(interval) {
+					clearInterval(interval);
+					interval = null;
+					ctx.innerHTML = "Play";
+				} else {
+					interval = startInterval(GAME_INTERVAL);
+					ctx.innerHTML = "Pause";
+				}
+			}
 
 			return "ASDF";
 		}
@@ -475,6 +505,9 @@
 
 		this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, function(obj){
 			this.eatingFood = true;
+			//Speed up Game
+			this.eventCenter.fireEvent(this.eventCenter.EVENT_SPEED_UP_GAME, this);
+
 			console.log("snake event", obj)
 		}.bind(this));
 
@@ -571,54 +604,83 @@
 		BoardDisplay: BoardDisplay
 	}
 
+	var FOOD_POINTS = 10;
+
 	/**
 	 * Created by saxelrod on 12/5/16.
 	 */
 	function Board(eventCenter, width, height, snake) {
+		this.points = 0;
 		this.eventListeners = {};
 		this.width = width;
 		this.height = height;
 		this.snake = snake;
-		this.food = new Food(eventCenter, 3, 4);
+		this.food = [new Food(eventCenter, Food.types.FOOD, 3, 4)];
 		this.eventCenter = eventCenter;
 
-		this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, function(obj) {
-				this.moveFood();
-		}.bind(this));
+		this.eventCenter.listenToEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, this.onFoodEaten.bind(this));
 
-		this.moveFood = function() {
-			this.food.move(parseInt(Math.random() * this.height, 10), parseInt(Math.random() * this.width, 10));
+		this.onFoodEaten = function (eatenFood) {
+			// dole out points, create all types of food
+			this.food = this.food.filter(function(f){
+				return f != eatenFood;
+			}.bind(this));
 
-			for(var i = 0; i < this.snake.segments.length; i++) {
-				if(this.food.segmentIsHere(this.snake.segments[i])) {
-					this.moveFood();
+			this.createFood();
+
+			this.points += FOOD_POINTS;
+			var points = document.getElementById("gamePoints");
+			points.innerHTML = this.points;
+
+		},
+
+		this.createFood = function () {
+			//create normal food, sometimes create spider foood
+
+		},
+
+		this.moveFood = function (food) {
+			console.log("ASDFASDFASDF:;");
+			food.move(parseInt(Math.random() * this.height, 10), parseInt(Math.random() * this.width, 10));
+
+			for (var i = 0; i < this.snake.segments.length; i++) {
+				if (food.segmentIsHere(this.snake.segments[i])) {
+					this.moveFood(food);
 				}
 			}
 		},
 
-		this.step = function () {
-			snake.move();
-			return !this.isSnakeDead();
-		},
+				this.step = function () {
+					snake.move();
+					return !this.isSnakeDead();
+				},
 
-		this.hasFoodAt = function (row, col) {
-			return this.food.isHere(row, col);
-		},
+				this.hasFoodAt = function (row, col) {
+					for (var i = 0; i < this.food.length; i++) {
+						if (this.food[i].isHere(row, col)) {
+							return this.food[i];
+						} else {
+							return null;
+						}
+					}
+				},
 
-		this.isSnakeDead = function () {
-			var segment = this.snake.segments[0];
-			return segment.row >= this.height
-					|| segment.col >= this.width
-					|| segment.row < 0
-					|| segment.col < 0
-					|| this.snake.intersectWithSelf();
-		},
+				this.isSnakeDead = function () {
+					var segment = this.snake.segments[0];
+					return segment.row >= this.height
+							|| segment.col >= this.width
+							|| segment.row < 0
+							|| segment.col < 0
+							|| this.snake.intersectWithSelf();
+				},
 
-		this.ateFood = function () {
-			if (this.food.segmentIsHere(this.snake.segments[0])) {
-				this.eventCenter.fireEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, this);
-			}
-		}
+				this.ateFood = function () {
+					for (var i = 0; i < this.food.length; i++) {
+						if (this.food[i].segmentIsHere(this.snake.segments[0])) {
+							this.eventCenter.fireEvent(this.eventCenter.EVENT_NAME_FOOD_ATE, this.food[i]);
+						}
+					}
+				}
 	}
 
 	function BoardDisplay(board) {
@@ -632,13 +694,18 @@
 		drawCell: function (row, col) {
 			var cls = "";
 
+			var cellFood = this.board.hasFoodAt(row, col)
 			if (this.board.snake.hasSegmentAt(row, col)) {
 				cls = "snake";
-			} else if (this.board.hasFoodAt(row, col)) {
-				cls += "food";
+			} else if (cellFood) {
+				cls += cellFood.type;
 			}
 
 			return '<td id="col_' + col + '" class="' + cls + '">O</td>';
+		},
+
+		shouldInsertSpider: function () {
+			return true;
 		},
 
 		draw: function () {
@@ -659,7 +726,11 @@
 					t += '</tr>\n';
 				}
 
-				this.el.innerHTML = ("<table>" + t + "</table>");
+				this.el.innerHTML = ("<div><span class=\"points-label\">Points:</span><span class=\"points\"> " + this.board.points + "</span></div><table>" + t + "</table>");
+			}
+
+			if (this.shouldInsertSpider()) {
+
 			}
 		}
 	};
@@ -668,15 +739,19 @@
 /* 8 */
 /***/ function(module, exports) {
 
+	
 	module.exports = {
-		Food: Food
+		Food: Food,
+		FoodTypes: Food.types
 	}
 
 
-	function Food(eventCenter, y, x) {
+	function Food(eventCenter, type, y, x) {
+		this.type = type;
 		this.row = y;
 		this.col = x;
 		this.eventCenter = eventCenter;
+
 
 		this.move = function(row, col) {
 			this.row = row;
@@ -693,6 +768,11 @@
 	}
 
 
+	Food.types = {
+		FOOD: "food",
+		SPIDER: "spider"
+	};
+
 /***/ },
 /* 9 */
 /***/ function(module, exports) {
@@ -703,6 +783,7 @@
 
 	function EventCenter() {
 		this.EVENT_NAME_FOOD_ATE = "foodAte";
+		this.EVENT_SPEED_UP_GAME = "speedUpGame";
 
 		this.eventListeners = { };
 
